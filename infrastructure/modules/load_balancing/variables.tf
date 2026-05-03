@@ -15,11 +15,11 @@ variable "alb_sg_id" {
 }
 
 variable "public_subnet_ids" {
-  type        = list(string)
+  type = list(string)
   description = "List of public subnet IDs for the ALB (must be at least 2 in different AZs)"
 }
 
 variable "worker1_instance_id" {
-  type        = string
+  type = string
   description = "Instance ID of the Worker node"
 }

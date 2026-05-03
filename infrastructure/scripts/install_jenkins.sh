@@ -62,13 +62,11 @@ sudo systemctl start docker
 sudo usermod -aG docker jenkins
 sudo usermod -aG docker ubuntu
 
-# Restart Jenkins so it inherits the new Docker group permissions
 sudo systemctl restart jenkins
 
 echo "------------------------------------------------"
 echo "⏳ Waiting for Jenkins to generate initial password..."
 
-# Wait until the password file exists before trying to read it
 while [ ! -f /var/lib/jenkins/secrets/initialAdminPassword ]; do
   sleep 2
 done

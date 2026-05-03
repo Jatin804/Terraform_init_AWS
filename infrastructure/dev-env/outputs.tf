@@ -48,32 +48,32 @@ output "k8s_node_iam_profile" {
 }
 
 output "flask_application_url" {
-  value       = "http://${module.load_balancing.alb_dns_name}"
+  value = "http://${module.load_balancing.alb_dns_name}"
   description = "The public URL to view your deployed Flask application."
 }
 
 output "bastion_public_ip" {
-  value       = module.compute.bastion_public_ip
+  value = module.compute.bastion_public_ip
   description = "Public IP of the Bastion Host."
 }
 
 output "bastion_ssh_command" {
-  value       = "ssh -i ~/.ssh/id_ed25519 -A ubuntu@${module.compute.bastion_public_ip}"
+  value = "ssh -i ~/.ssh/id_ed25519 -A ubuntu@${module.compute.bastion_public_ip}"
   description = "Command to securely SSH into your Bastion Host."
 }
 
 output "jenkins_instance_id" {
-  value       = module.compute.jenkins_instance_id
+  value = module.compute.jenkins_instance_id
   description = "Instance ID of Jenkins server."
 }
 
 output "master_instance_id" {
-  value       = module.compute.master_instance_id
+  value = module.compute.master_instance_id
   description = "Instance ID of Kubernetes Master."
 }
 
 output "worker1_instance_id" {
-  value       = module.compute.worker1_instance_id
+  value = module.compute.worker1_instance_id
   description = "Instance ID of Kubernetes Worker 1."
 }
 
