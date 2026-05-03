@@ -1,30 +1,32 @@
 # Network Module
 module "networking" {
-  source = "./modules/networking"
+  source = "../modules/networking"
 
-  aws_vpc_cidr          = var.aws_vpc_cidr
-  public_subnet_cidr    = var.public_subnet_cidr
-  private_subnet_cidr   = var.private_subnet_cidr
-  availability_zones    = var.availability_zones
-  route_cidr            = var.route_cidr
-  tags                  = var.tags
+  aws_vpc_cidr = var.aws_vpc_cidr
+  public_subnet_cidr = var.public_subnet_cidr
+  private_subnet_cidr = var.private_subnet_cidr
+  availability_zones = var.availability_zones
+  route_cidr = var.route_cidr
+  tags = var.tags
   nat_availability_mode = "public"
 }
 
 # Security Groups & IAM Roles
 module "security" {
-  source = "./modules/security"
+  source = "../modules/security"
 
-  vpc_id               = module.networking.vpc_id
-  alb_name             = var.alb_name
+  vpc_id = module.networking.vpc_id
+  alb_name = var.alb_name
+  ssh_rules = var.ssh_rules
   master_ingress_rules = var.master_ingress_rules
   worker_ingress_rules = var.worker_ingress_rules
 }
 
 #  EC2 Instances
 module "compute" {
-  source = "./modules/compute"
+  source = "../modules/compute"
 
+  ami_id               = var.ami_id
   aws_instance_type    = var.aws_instance_type
   bastion_type         = var.bastion_type
   key_name             = var.key_name
@@ -44,14 +46,14 @@ module "compute" {
   jenkins_iam_profile  = module.security.jenkins_iam_profile
   k8s_node_iam_profile = module.security.k8s_node_iam_profile
 
-  jenkins_script = "${path.root}/scripts/jenkins.sh"
-  master_script  = "${path.root}/scripts/master.sh"
-  worker_script  = "${path.root}/scripts/worker.sh"
+  jenkins_script = "../scripts/install_jenkins.sh"
+  master_script  = "../scripts/k8s_master.sh"
+  worker_script  = "../scripts/k8s_worker.sh"
 }
 
 # 4. Attach the Load Balancer
 module "load_balancing" {
-  source = "./modules/load_balancing"
+  source = "../modules/load_balancing"
 
   alb_name            = var.alb_name
   vpc_id              = module.networking.vpc_id

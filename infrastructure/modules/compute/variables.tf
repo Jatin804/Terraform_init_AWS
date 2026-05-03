@@ -66,3 +66,13 @@ variable "jenkins_script" {
     description = "Jenkins script"
     type = string
 }
+
+variable "jenkins_iam_profile" {
+    description = "IAM instance profile name for Jenkins"
+    type = string
+}
+
+variable "k8s_node_iam_profile" {
+    description = "IAM instance profile name for Kubernetes nodes"
+    type = string
+}

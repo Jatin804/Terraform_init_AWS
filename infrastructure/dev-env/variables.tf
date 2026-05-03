@@ -42,6 +42,10 @@ variable "key_name" {
     type = string
 }
 
+variable "ssh_rules" {
+  type = map(list(string))
+}
+
 variable "ssh_private_key_path" { 
     type = string 
 }
@@ -62,4 +66,9 @@ variable "worker_ingress_rules" {
     to_port     = number
     protocol    = string
   }))
+}
+
+variable "ami_id" {
+  description = "AMI ID for EC2 instances"
+  type        = string
 }

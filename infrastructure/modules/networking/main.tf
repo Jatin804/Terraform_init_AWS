@@ -71,10 +71,9 @@ resource "aws_eip" "nat_gateway_eip" {
 
 # NAT Gateway
 resource "aws_nat_gateway" "nat_gateway" {
-  allocation_id = aws_eip.nat_gateway_eip
+  allocation_id = aws_eip.nat_gateway_eip.id
   subnet_id = aws_subnet.public-subnet[0].id
-  vpc_id = aws_vpc.main.id
-  availability_mode = var.nat_availability_mode
+  connectivity_type = "public"
 
   tags = merge(
     var.tags,

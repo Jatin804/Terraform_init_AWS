@@ -1,17 +1,19 @@
 #!/bin/bash
+set -e
+export DEBIAN_FRONTEND=noninteractive
+
+echo "🚀 Starting Installation..."
+
+set -e # Exit on error
 
 sudo apt-get update -y
-
-# Setting up password auth
-echo "$(whoami) ALL=(ALL) NOPASSWD:ALL" | sudo tee "/etc/sudoers.d/$(whoami)" > /dev/null
-sudo chmod 0440 "/etc/sudoers.d/$(whoami)"
 
 # Updating /etc/hosts for connection
 if ! grep -q "ANSIBLE MANAGED HOSTS" /etc/hosts; then
   echo -e "\n# BEGIN ANSIBLE MANAGED HOSTS\n$(hostname -I | awk '{print $1}') $(hostname).example.com $(hostname)\n# END ANSIBLE MANAGED HOSTS" | sudo tee -a /etc/hosts > /dev/null
 fi
 
-# Disabling swap of all nodes including master 
+# Disabling swap
 sudo swapoff -a
 sudo sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
 
@@ -32,8 +34,8 @@ net.ipv4.ip_forward = 1
 EOF
 sudo sysctl --system
 
-# Installing necessary dependencies and network modules for ubuntu
-sudo apt-get install -y curl gnupg2 software-properties-common ca-certificates lsb-release firewalld conntrack socat ipset
+# Installing necessary dependencies (Removed firewalld)
+sudo apt-get install -y curl gnupg software-properties-common ca-certificates lsb-release conntrack socat ipset
 
 # Adding Docker and installing containerd
 sudo mkdir -p /etc/apt/keyrings
@@ -58,11 +60,8 @@ sudo systemctl restart containerd
 sudo systemctl enable containerd
 
 # Kubernetes Setup 
-# Removing conflicting kubernetes list and keyring files
 sudo rm -f /etc/apt/sources.list.d/kubernetes.list
-sudo rm -f /etc/apt/sources.list.d/archive_uri-https_pkgs_k8s_io_core_stable_v1_31_deb_.list
-sudo rm -f /etc/apt/keyrings/kubernetes.gpg
-sudo rm -f /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+sudo rm -f /etc/apt/keyrings/kubernetes-apt-keyring.asc
 
 # Downloading K8s GPG key
 curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.34/deb/Release.key | sudo tee /etc/apt/keyrings/kubernetes-apt-keyring.asc > /dev/null
@@ -75,38 +74,22 @@ echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.asc] https://pkgs.
 sudo apt-get update -y
 sudo apt-get install -y kubelet kubeadm kubectl
 
-# Preventing K8s packages from being upgraded
 sudo apt-mark hold kubelet kubeadm kubectl
 
-# Master Conf ! --------------------------------------------------------------------------
+# Initializing kubernetes (Added ignore preflight for micro instances)
+sudo kubeadm init --pod-network-cidr=192.168.0.0/16 --ignore-preflight-errors=NumCPU,Mem
 
+# Configuring kubectl for the default 'ubuntu' user
+mkdir -p /home/ubuntu/.kube
+sudo cp -i /etc/kubernetes/admin.conf /home/ubuntu/.kube/config
+sudo chown ubuntu:ubuntu /home/ubuntu/.kube/config
 
-# Firewall for ports !
-sudo systemctl start firewalld
-sudo systemctl enable firewalld
-
-sudo firewall-cmd --permanent --add-port=6443/tcp
-sudo firewall-cmd --permanent --add-port=2379-2380/tcp
-sudo firewall-cmd --permanent --add-port=10250-10252/tcp
-sudo firewall-cmd --permanent --add-port=10257/tcp
-sudo firewall-cmd --permanent --add-port=10259/tcp
-sudo firewall-cmd --permanent --add-port=179/tcp
-sudo firewall-cmd --permanent --add-port=4789/udp
-
-sudo firewall-cmd --reload
-
-# Initializing kubernetes !
-# Note: Hardcoded 192.168.0.0/16 because it is the default required CIDR for Calico CNI.
-sudo kubeadm init --pod-network-cidr=192.168.0.0/16
-
-# Creating .kube directory and configuring kubectl for the current user
-mkdir -p $HOME/.kube
-sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
-sudo chown $(id -u):$(id -g) $HOME/.kube/config
-
-# Also configuring for root (as specified in your playbook)
+# Also configuring for root
 sudo mkdir -p /root/.kube
 sudo cp -i /etc/kubernetes/admin.conf /root/.kube/config
+
+# Temporarily export kubeconfig for the root user to run Calico install
+export KUBECONFIG=/etc/kubernetes/admin.conf
 
 # Calico Setup
 kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.2/manifests/calico.yaml
@@ -115,5 +98,6 @@ kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.2/
 echo ""
 echo "========================================================================="
 echo "Save the below join command to run on your worker nodes:"
+echo "View this at any time by running: cat /var/log/cloud-init-output.log"
 echo "========================================================================="
 sudo kubeadm token create --print-join-command
